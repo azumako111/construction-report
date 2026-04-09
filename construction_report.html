@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>施工写真報告書</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;600&display=swap');
+
+  :root {
+    --primary: #2d3a52;
+    --accent:  #c8a84b;
+    --paper:   #ffffff;
+    --text:    #1a1a2e;
+    --muted:   #6b7280;
+    --border:  #c9cdd8;
+    --drop-active: #dbeafe;
+    --drop-border: #3b82f6;
+    --bg:      #a8b0c0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ========== MODAL ========== */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 12px; padding: 28px 32px;
+    max-width: 380px; width: 90%;
+    box-shadow: 0 8px 40px rgba(0,0,0,.3); text-align: center;
+  }
+  .modal-box p {
+    font-size: 14px; color: var(--text); line-height: 1.9;
+    margin-bottom: 22px; white-space: pre-line;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+  .modal-btn {
+    padding: 9px 26px; border: none; border-radius: 7px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .modal-btn-ok     { background: var(--primary); color: #fff; }
+  .modal-btn-cancel { background: #e5e7eb; color: #374151; }
+
+  /* ========== TOOLBAR ========== */
+  .toolbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--primary); padding: 10px 24px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .toolbar-title {
+    font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 600;
+    color: var(--accent); margin-right: auto; letter-spacing: .05em;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 16px; border: none; border-radius: 6px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .15s; letter-spacing: .03em; white-space: nowrap;
+  }
+  .btn-accent  { background: var(--accent); color: var(--primary); }
+  .btn-accent:hover  { background: #d4b05a; }
+  .btn-outline { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.4); }
+  .btn-outline:hover { background: rgba(255,255,255,.12); }
+
+  /* ========== LAYOUT ========== */
+  .pages-container {
+    padding: 28px 20px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 32px;
+  }
+  .bottom-bar { padding: 18px 20px 52px; display: flex; justify-content: center; }
+  .add-page-wrap { width: 794px; display: flex; justify-content: flex-end; }
+  .btn-add-page {
+    background: var(--primary); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 22px; font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.25); transition: all .18s;
+  }
+  .btn-add-page:hover { background: #3d4e6e; transform: translateY(-1px); }
+
+  /* ========== PAGE ========== */
+  .report-page {
+    background: var(--paper); width: 794px; min-height: 1123px;
+    box-shadow: 0 4px 28px rgba(0,0,0,.22); position: relative;
+    padding: 20px 28px 52px; display: flex; flex-direction: column;
+    border-top: 5px solid var(--primary);
+  }
+
+  /* ========== PAGE HEADER ========== */
+  .page-header {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: 8px;
+    margin-bottom: 14px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary);
+  }
+  .page-header-left  { display: flex; align-items: center; }
+  .page-header-center { display: flex; flex-direction: column; align-items: center; }
+  .page-header-right { display: flex; align-items: center; justify-content: flex-end; }
+
+  .report-name-input {
+    font-family: 'Noto Serif JP', serif; font-size: 17px; font-weight: 600;
+    color: var(--primary); letter-spacing: .12em; text-align: center;
+    border: none; outline: none; background: transparent;
+    width: 100%; padding: 2px 6px; border-radius: 4px; transition: background .15s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .report-name-input:hover { background: #f5f7ff; }
+  .report-name-input:focus { background: #eef1ff; }
+
+  .btn-delete-page {
+    background: #fee2e2; color: #dc2626;
+    border: 1.5px solid #fca5a5; border-radius: 6px;
+    padding: 4px 10px; font-size: 11px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; font-family: 'Noto Sans JP', sans-serif;
+    transition: all .15s; flex-shrink: 0;
+  }
+  .btn-delete-page:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+  /* ========== ENTRIES ========== */
+  .entries-list { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .entry {
+    display: grid; grid-template-columns: 1fr 220px;
+    border: 1.5px solid var(--border); border-radius: 5px;
+    overflow: hidden; flex: 1;
+  }
+
+  /* Image zone */
+  .img-zone {
+    background: #e8eaf2; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden; transition: background .2s;
+  }
+  .img-zone.dragover {
+    background: var(--drop-active);
+    outline: 3px dashed var(--drop-border); outline-offset: -4px;
+  }
+  .img-zone img {
+    width: 100%; height: 100%; object-fit: cover;
+    position: absolute; top: 0; left: 0; display: block;
+  }
+  .drop-hint {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; color: var(--muted); font-size: 11px;
+    z-index: 1; text-align: center; padding: 12px; pointer-events: none;
+  }
+  .drop-hint svg { opacity: .35; }
+  .img-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.48); display: flex; justify-content: center;
+    padding: 6px; opacity: 0; transition: opacity .2s; z-index: 2;
+  }
+  .img-zone:hover .img-overlay { opacity: 1; }
+  .img-overlay button {
+    background: rgba(255,255,255,.88); border: none; border-radius: 4px;
+    padding: 3px 12px; font-size: 11px; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif; color: #333;
+  }
+  .img-file-input { display: none; }
+
+  /* Comment panel */
+  .comment-panel {
+    background: var(--paper); border-left: 1.5px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .comment-header {
+    background: #6b7280; color: #fff;
+    padding: 5px 9px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .no-badge {
+    background: transparent; color: #fff; font-weight: 700; font-size: 12px;
+    padding: 2px 4px; font-family: 'Noto Serif JP', serif; white-space: nowrap;
+  }
+  .comment-header-label { font-size: 11px; font-weight: 500; letter-spacing: .05em; flex: 1; }
+  .comment-body {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 7px 8px 6px; gap: 5px; overflow-y: auto;
+  }
+  .field-row { display: flex; flex-direction: column; gap: 2px; }
+  .field-label {
+    font-size: 10px; color: var(--muted); font-weight: 500;
+    letter-spacing: .04em; border-bottom: 1px solid #e5e7eb; padding-bottom: 1px;
+  }
+  .field-input {
+    border: none; outline: none; font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px; color: var(--text); background: transparent;
+    width: 100%; padding: 3px 2px; resize: vertical; line-height: 1.5; min-height: 20px;
+  }
+  .field-input:focus { background: #f0f4ff; border-radius: 3px; }
+  .field-input::placeholder { color: #c4c9d4; }
+  .date-input {
+    border: none; outline: none; font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px; color: var(--text); background: transparent;
+    width: 100%; padding: 3px 2px; cursor: pointer;
+  }
+  .date-input:focus { background: #f0f4ff; border-radius: 3px; }
+  .status-row {
+    margin-top: auto; border-top: 1.5px solid #e5e7eb;
+    padding: 6px 0 2px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+  }
+  .status-label-sm { font-size: 10px; color: var(--muted); font-weight: 500; letter-spacing: .04em; }
+  .status-select {
+    width: 100%; padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 5px;
+    font-family: 'Noto Serif JP', serif; font-size: 13px; font-weight: 600; color: var(--primary);
+    background: #f8f9fc; cursor: pointer; outline: none;
+  }
+
+  /* ========== PAGE FOOTER ========== */
+  .page-footer {
+    position: absolute; bottom: 12px; left: 28px; right: 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid #dde0e8; padding-top: 6px;
+  }
+  .footer-info {
+    font-size: 10px; color: var(--muted); letter-spacing: .05em;
+    flex: 1; outline: none; border: none; background: transparent;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .footer-info:focus { background: #f5f6fa; border-radius: 3px; }
+  .footer-page { font-size: 11px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+
+  /* ========== PRINT ========== */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { background: #fff !important; }
+    .toolbar, .bottom-bar, .modal-backdrop,
+    .btn-delete-page, .img-overlay, .drop-hint { display: none !important; }
+    .pages-container { padding: 0 !important; gap: 0 !important; display: block !important; }
+    .report-page {
+      width: 100% !important; height: 277mm !important; min-height: 0 !important;
+      box-shadow: none !important; margin: 0 !important; padding: 6mm 8mm 6mm !important;
+      border-top: 4px solid #2d3a52 !important;
+      page-break-after: always !important; break-after: page !important;
+      overflow: hidden !important; display: flex !important; flex-direction: column !important;
+    }
+    .page-header { margin-bottom: 4mm !important; padding-bottom: 3mm !important; }
+    .report-name-input {
+      font-size: 15px !important; letter-spacing: .12em !important;
+      white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
+    }
+    .entries-list { flex: 1 !important; gap: 2mm !important; overflow: hidden !important; }
+    .entry { flex: 1 !important; min-height: 0 !important; overflow: hidden !important; break-inside: avoid !important; }
+    .img-zone { overflow: hidden !important; min-height: 60mm !important; }
+    .comment-panel { overflow: visible !important; }
+    .comment-body { overflow: visible !important; gap: 2px !important; padding: 3px 5px 4px !important; }
+    .field-input { font-size: 10px !important; resize: none !important; overflow: visible !important; }
+    .date-input { font-size: 10px !important; }
+    .field-label { font-size: 9px !important; }
+    .status-select { font-size: 11px !important; padding: 3px 5px !important; }
+    .comment-header { padding: 4px 7px !important; }
+    .no-badge { font-size: 11px !important; }
+    .comment-header-label { font-size: 10px !important; }
+    input::placeholder, textarea::placeholder { color: transparent !important; }
+    .page-footer {
+      position: relative !important; bottom: unset !important;
+      left: unset !important; right: unset !important;
+      margin-top: 3mm; padding-top: 3px !important;
+    }
+    @page { size: A4 portrait; margin: 10mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== モーダル ===== -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-box">
+    <p id="modalMsg"></p>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" id="modalCancel">キャンセル</button>
+      <button class="modal-btn modal-btn-ok" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ツールバー ===== -->
+<div class="toolbar">
+  <div class="toolbar-title">📋 施工写真報告書 エディタ</div>
+  <button class="btn btn-outline" onclick="confirmReset()">🗑 リセット</button>
+  <button class="btn btn-accent"  onclick="doPrint()">🖨 印刷</button>
+</div>
+
+<!-- ===== ページ群 ===== -->
+<div class="pages-container" id="pagesContainer"></div>
+
+<!-- ===== ページ追加ボタン ===== -->
+<div class="bottom-bar">
+  <div class="add-page-wrap">
+    <button class="btn-add-page" onclick="addPage()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      ページを追加
+    </button>
+  </div>
+</div>
+
+<script>
+/* ===== モーダル ===== */
+var _cb = null;
+function showModal(msg, hasCancel, cb) {
+  document.getElementById('modalMsg').textContent = msg;
+  document.getElementById('modalCancel').style.display = hasCancel ? '' : 'none';
+  document.getElementById('modalBackdrop').classList.add('show');
+  _cb = cb || null;
+}
+document.getElementById('modalOk').onclick = function() {
+  document.getElementById('modalBackdrop').classList.remove('show');
+  if (_cb) { _cb(); _cb = null; }
+};
+document.getElementById('modalCancel').onclick = function() {
+  document.getElementById('modalBackdrop').classList.remove('show');
+  _cb = null;
+};
+
+/* ===== 状態 ===== */
+var pageCount    = 0;
+var entryCounter = 0;
+var sharedName   = '施　工　写　真　報　告　書';
+var DEFAULT_NAME = '施　工　写　真　報　告　書';
+
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function uid() { return 'u' + Math.random().toString(36).slice(2, 9); }
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ===== 印刷 ===== */
+function doPrint() {
+  /* iframeの中かどうかを判定 */
+  var inIframe = false;
+  try { inIframe = window.self !== window.top; } catch(e) { inIframe = true; }
+
+  if (!inIframe) {
+    /* 直接開いている場合はそのままブラウザ印刷 */
+    window.print();
+    return;
+  }
+
+  /* iframe内（共有URL等）：印刷用HTMLを新タブで開いて自動印刷 */
+  var html = buildPrintHTML();
+  var blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var win  = window.open(url, '_blank');
+
+  if (win) {
+    win.addEventListener('load', function() {
+      setTimeout(function() { win.focus(); win.print(); URL.revokeObjectURL(url); }, 400);
+    });
+  } else {
+    /* ポップアップがブロックされた場合はダウンロードで代替 */
+    var a = document.createElement('a');
+    a.href = url; a.download = '施工写真報告書_印刷用.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showModal('ポップアップがブロックされたためダウンロードしました。\nブラウザで開き Ctrl+P で印刷してください。', false, null);
+  }
+}
+
+function buildPrintHTML() {
+  /* 1. input の現在値を属性に書き戻す */
+  document.querySelectorAll('input').forEach(function(el) {
+    el.setAttribute('value', el.value);
+  });
+
+  /* 2. select の選択状態を属性に書き戻す */
+  document.querySelectorAll('select').forEach(function(el) {
+    Array.from(el.options).forEach(function(opt) {
+      opt.selected ? opt.setAttribute('selected','selected') : opt.removeAttribute('selected');
+    });
+  });
+
+  /* 3. DOM をディープクローン */
+  var clone = document.documentElement.cloneNode(true);
+
+  /* 4. textarea の内容をクローン側に反映（属性では保持されない） */
+  var origTAs  = document.querySelectorAll('textarea');
+  var cloneTAs = clone.querySelectorAll('textarea');
+  origTAs.forEach(function(orig, i) {
+    if (cloneTAs[i]) cloneTAs[i].textContent = orig.value;
+  });
+
+  /* 5. img の src（Data URL）をクローン側に反映 */
+  var origImgs  = document.querySelectorAll('.img-zone img');
+  var cloneImgs = clone.querySelectorAll('.img-zone img');
+  origImgs.forEach(function(orig, i) {
+    if (cloneImgs[i]) cloneImgs[i].src = orig.src;
+  });
+
+  /* 6. label を div に置き換え（印刷時にクリック動作不要） */
+  clone.querySelectorAll('label.img-zone').forEach(function(lbl) {
+    var div = document.createElement('div');
+    div.className = lbl.className;
+    div.innerHTML = lbl.innerHTML;
+    lbl.parentNode.replaceChild(div, lbl);
+  });
+
+  /* 7. 不要要素を削除 */
+  clone.querySelectorAll(
+    '.toolbar, .bottom-bar, .modal-backdrop, .btn-delete-page, ' +
+    '.img-overlay, .drop-hint, .img-file-input'
+  ).forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
+
+  /* 8. プレースホルダーを非表示 */
+  clone.querySelectorAll('[placeholder]').forEach(function(el) {
+    el.setAttribute('placeholder', '');
+  });
+
+  /* 9. 自動印刷スクリプトを注入 */
+  var s = document.createElement('script');
+  s.textContent = 'window.addEventListener("load",function(){setTimeout(function(){window.print();},300);});';
+  clone.querySelector('body').appendChild(s);
+
+  return '<!DOCTYPE html>' + clone.outerHTML;
+}
+
+/* ===== ページ追加 ===== */
+function addPage() {
+  pageCount++;
+  var pid  = 'pg' + Date.now();
+  var page = document.createElement('div');
+  page.className = 'report-page';
+  page.id = pid;
+  var ids = [uid(), uid(), uid()];
+
+  page.innerHTML =
+    '<div class="page-header">' +
+      '<div class="page-header-left">' +
+        '<button class="btn-delete-page" onclick="confirmDelete(\'' + pid + '\')">✕ 削除</button>' +
+      '</div>' +
+      '<div class="page-header-center">' +
+        '<input class="report-name-input" type="text"' +
+          ' value="' + esc(sharedName) + '"' +
+          ' placeholder="報告書名を入力"' +
+          ' oninput="syncName(this.value)"' +
+          ' onblur="if(!this.value.trim()){this.value=DEFAULT_NAME;syncName(DEFAULT_NAME);}">' +
+      '</div>' +
+      '<div class="page-header-right"></div>' +
+    '</div>' +
+    '<div class="entries-list">' +
+      entryHTML() + entryHTML() + entryHTML() +
+    '</div>' +
+    '<div class="page-footer">' +
+      '<input class="footer-info" type="text" placeholder="工事名・作業場所" spellcheck="false">' +
+      '<span class="footer-page" data-footer-page>- ' + pageCount + ' -</span>' +
+    '</div>';
+
+  document.getElementById('pagesContainer').appendChild(page);
+  setupDrop(page);
+  renumber();
+}
+
+/* ===== エントリHTML ===== */
+function entryHTML() {
+  entryCounter++;
+  var no = entryCounter;
+  return (
+    '<div class="entry">' +
+      '<label class="img-zone" data-dropzone>' +
+        '<input class="img-file-input" type="file" accept="image/*" onchange="onFileChange(this)">' +
+        '<div class="drop-hint">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">' +
+            '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+            '<circle cx="8.5" cy="8.5" r="1.5"/>' +
+            '<path d="m21 15-5-5L5 21"/>' +
+          '</svg>' +
+          '<span>クリック または ドラッグ＆ドロップ<br>で画像を挿入</span>' +
+        '</div>' +
+        '<div class="img-overlay">' +
+          '<button type="button" onclick="clearImg(event,this)">✕ 画像を削除</button>' +
+        '</div>' +
+      '</label>' +
+      '<div class="comment-panel">' +
+        '<div class="comment-header">' +
+          '<span class="no-badge">NO. ' + no + '</span>' +
+          '<span class="comment-header-label">撮影情報・コメント</span>' +
+        '</div>' +
+        '<div class="comment-body">' +
+          '<div class="field-row">' +
+            '<div class="field-label">撮影日</div>' +
+            '<input class="date-input" type="date" value="' + todayISO() + '">' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field-label">撮影箇所</div>' +
+            '<input class="field-input" type="text" placeholder="撮影箇所を入力してください">' +
+          '</div>' +
+          '<div class="field-row">' +
+            '<div class="field-label">施工内容・備考</div>' +
+            '<textarea class="field-input" rows="3" placeholder="施工内容や気づき事項を入力してください。"></textarea>' +
+          '</div>' +
+          '<div class="status-row">' +
+            '<div class="status-label-sm">状　態</div>' +
+            '<select class="status-select">' +
+              '<option value="">　</option>' +
+              '<option value="施工前">施工前</option>' +
+              '<option value="施工後">施工後</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ===== タイトル同期 ===== */
+function syncName(val) {
+  sharedName = val;
+  var inputs = document.querySelectorAll('.report-name-input');
+  inputs.forEach(function(el) { if (el.value !== val) el.value = val; });
+}
+
+/* ===== ドラッグ＆ドロップ ===== */
+/* ゾーン外ドロップ時にブラウザがファイルを開くのを防ぐ */
+document.addEventListener('dragover', function(e) { e.preventDefault(); });
+document.addEventListener('drop',     function(e) { e.preventDefault(); });
+
+function setupDrop(parent) {
+  parent.querySelectorAll('[data-dropzone]').forEach(function(zone) {
+    zone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      zone.classList.add('dragover');
+    });
+    zone.addEventListener('dragleave', function(e) {
+      /* relatedTarget がゾーン内の子要素なら無視（誤発火防止） */
+      if (zone.contains(e.relatedTarget)) return;
+      zone.classList.remove('dragover');
+    });
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      var f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('image/')) loadImg(zone, f);
+    });
+  });
+}
+function onFileChange(input) {
+  var f = input.files[0]; if (!f) return;
+  loadImg(input.closest('[data-dropzone]'), f); input.value = '';
+}
+function loadImg(zone, file) {
+  var r = new FileReader();
+  r.onload = function(e) {
+    var img = zone.querySelector('img');
+    if (!img) { img = document.createElement('img'); zone.prepend(img); }
+    img.src = e.target.result;
+    zone.querySelector('.drop-hint').style.display = 'none';
+  };
+  r.readAsDataURL(file);
+}
+function clearImg(e, btn) {
+  e.preventDefault(); /* labelのファイル選択を抑制 */
+  e.stopPropagation();
+  var zone = btn.closest('[data-dropzone]');
+  var img  = zone.querySelector('img'); if (img) img.remove();
+  zone.querySelector('.drop-hint').style.display = '';
+}
+
+/* ===== ページ管理 ===== */
+function confirmDelete(pid) {
+  if (pageCount <= 1) { showModal('最低1ページは必要です。', false, null); return; }
+  showModal('このページを削除しますか？', true, function() {
+    var el = document.getElementById(pid);
+    if (el) el.remove();
+    pageCount--;
+    renumber();
+  });
+}
+function confirmReset() {
+  showModal('全ページをリセットしますか？入力内容が失われます。', true, function() {
+    document.getElementById('pagesContainer').innerHTML = '';
+    pageCount = 0; entryCounter = 0; addPage();
+  });
+}
+function renumber() {
+  document.querySelectorAll('.report-page').forEach(function(p, i) {
+    var f = p.querySelector('[data-footer-page]');
+    if (f) f.textContent = '- ' + (i + 1) + ' -';
+  });
+}
+
+/* ===== 初期化 ===== */
+addPage();
+</script>
+</body>
+</html>
