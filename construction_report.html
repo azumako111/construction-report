@@ -113,7 +113,7 @@
   .page-header-right { display: flex; align-items: center; justify-content: flex-end; }
 
   .report-name-input {
-    font-family: 'Noto Serif JP', serif; font-size: 20px; font-weight: 600;
+    font-family: 'Noto Serif JP', serif; font-size: 24px; font-weight: 600;
     color: var(--primary); letter-spacing: .12em; text-align: center;
     border: none; outline: none; background: transparent;
     width: 100%; padding: 2px 6px; border-radius: 4px; transition: background .15s;
@@ -256,20 +256,20 @@
     .btn-delete-page, .img-overlay, .drop-hint { display: none !important; }
     .pages-container { padding: 0 !important; gap: 0 !important; display: block !important; }
     .report-page {
-      width: 100% !important; height: 277mm !important; min-height: 0 !important;
-      box-shadow: none !important; margin: 0 !important; padding: 6mm 8mm 6mm !important;
+      width: 100% !important; height: 283mm !important; min-height: 0 !important;
+      box-shadow: none !important; margin: 0 !important; padding: 5mm 8mm 4mm !important;
       border-top: 4px solid #2d3a52 !important;
       page-break-after: always !important; break-after: page !important;
       overflow: hidden !important; display: flex !important; flex-direction: column !important;
     }
-    .page-header { margin-bottom: 4mm !important; padding-bottom: 3mm !important; }
+    .page-header { margin-bottom: 3mm !important; padding-bottom: 2mm !important; }
     .report-name-input {
-      font-size: 15px !important; letter-spacing: .12em !important;
+      font-size: 20px !important; letter-spacing: .12em !important;
       white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
     }
     .entries-list { flex: 1 !important; gap: 2mm !important; overflow: hidden !important; }
     .entry { flex: 1 !important; min-height: 0 !important; overflow: hidden !important; break-inside: avoid !important; }
-    .img-zone { overflow: hidden !important; min-height: 60mm !important; }
+    .img-zone { overflow: hidden !important; min-height: 0 !important; }
     .comment-panel { overflow: visible !important; }
     .comment-body { overflow: visible !important; gap: 2px !important; padding: 3px 5px 4px !important; }
     .field-input { font-size: 10px !important; resize: none !important; overflow: visible !important; }
@@ -283,9 +283,9 @@
     .page-footer {
       position: relative !important; bottom: unset !important;
       left: unset !important; right: unset !important;
-      margin-top: 3mm; padding-top: 3px !important;
+      margin-top: 2mm; padding-top: 3px !important;
     }
-    @page { size: A4 portrait; margin: 10mm; }
+    @page { size: A4 portrait; margin: 7mm; }
   }
 </style>
 </head>
