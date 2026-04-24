@@ -76,11 +76,13 @@
   .btn-outline:hover { background: rgba(255,255,255,.12); }
 
   /* ========== LAYOUT ========== */
+  body { overflow-x: auto; }
   .pages-container {
     padding: 28px 20px 0;
     display: flex; flex-direction: column; align-items: center; gap: 32px;
+    min-width: 834px;
   }
-  .bottom-bar { padding: 18px 20px 52px; display: flex; justify-content: center; }
+  .bottom-bar { padding: 18px 20px 52px; display: flex; justify-content: center; min-width: 834px; }
   .add-page-wrap { width: 794px; display: flex; justify-content: flex-end; }
   .btn-add-page {
     background: var(--primary); color: #fff; border: none; border-radius: 8px;
@@ -303,7 +305,7 @@
 <!-- ===== ツールバー ===== -->
 <div class="toolbar">
   <div class="toolbar-title">📋 施工写真報告書 エディタ</div>
-  <button class="btn btn-outline" onclick="confirmReset()">🗑 リセット</button>
+  <button class="btn btn-outline" onclick="confirmClear()">🗑 クリア</button>
   <button class="btn btn-print"  onclick="doPrint()">🖨 印刷</button>
 </div>
 
@@ -666,9 +668,11 @@ function setupEntryDrag(page) {
       _dragEntry = null;
       renumberEntries();
       initializeEntryButtons();
+      scheduleSave();
     });
     entry.addEventListener('dragover', function(e) {
       if (!_dragEntry || _dragEntry === entry) return;
+      if (_dragEntry.closest('.entries-list') !== entry.closest('.entries-list')) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       entry.classList.add('drag-over');
@@ -680,6 +684,7 @@ function setupEntryDrag(page) {
       e.preventDefault();
       entry.classList.remove('drag-over');
       if (!_dragEntry || _dragEntry === entry) return;
+      if (_dragEntry.closest('.entries-list') !== entry.closest('.entries-list')) return;
       var list = entry.closest('.entries-list');
       var entries = Array.from(list.children);
       var fromIdx = entries.indexOf(_dragEntry);
@@ -708,6 +713,7 @@ function moveEntry(btn, direction) {
 
   renumberEntries();
   initializeEntryButtons();
+  scheduleSave();
 }
 
 function renumberEntries() {
@@ -732,8 +738,97 @@ function initializeEntryButtons() {
   });
 }
 
+/* ===== localStorage 自動保存 ===== */
+var STORAGE_KEY = 'construction_report_v1';
+var _saveTimer = null;
+
+function scheduleSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveState, 400);
+}
+
+function saveState() {
+  try {
+    var data = { name: sharedName, pages: [] };
+    document.querySelectorAll('.report-page').forEach(function(page) {
+      var p = { footer: '', entries: [] };
+      var fi = page.querySelector('.footer-info');
+      if (fi) p.footer = fi.value;
+      page.querySelectorAll('.entry').forEach(function(entry) {
+        var di  = entry.querySelector('.date-input');
+        var ti  = entry.querySelector('input.field-input');
+        var ta  = entry.querySelector('textarea');
+        var ss  = entry.querySelector('.status-select');
+        var img = entry.querySelector('img');
+        p.entries.push({
+          date:     di  ? di.value  : '',
+          location: ti  ? ti.value  : '',
+          content:  ta  ? ta.value  : '',
+          status:   ss  ? ss.value  : '',
+          image:    img ? img.src   : ''
+        });
+      });
+      data.pages.push(p);
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(ex) {}
+}
+
+function restoreState() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { addPage(); return; }
+    var data = JSON.parse(raw);
+    sharedName = data.name || DEFAULT_NAME;
+    (data.pages || []).forEach(function(pageData) {
+      addPage();
+      var page = document.querySelector('.report-page:last-child');
+      var fi = page.querySelector('.footer-info');
+      if (fi) fi.value = pageData.footer || '';
+      var nameInput = page.querySelector('.report-name-input');
+      if (nameInput) nameInput.value = sharedName;
+      var entries = page.querySelectorAll('.entry');
+      (pageData.entries || []).forEach(function(ed, i) {
+        if (!entries[i]) return;
+        var di  = entries[i].querySelector('.date-input');
+        var ti  = entries[i].querySelector('input.field-input');
+        var ta  = entries[i].querySelector('textarea');
+        var ss  = entries[i].querySelector('.status-select');
+        if (di) di.value = ed.date || todayISO();
+        if (ti) ti.value = ed.location || '';
+        if (ta) ta.value = ed.content  || '';
+        if (ss) ss.value = ed.status   || '';
+        if (ed.image) {
+          var zone = entries[i].querySelector('[data-dropzone]');
+          if (zone) {
+            var img = document.createElement('img');
+            img.src = ed.image;
+            zone.prepend(img);
+            var hint = zone.querySelector('.drop-hint');
+            if (hint) hint.style.display = 'none';
+          }
+        }
+      });
+    });
+  } catch(ex) { addPage(); }
+}
+
+function confirmClear() {
+  showModal('入力内容をすべてクリアしますか？\n保存データも削除されます。', true, function() {
+    localStorage.removeItem(STORAGE_KEY);
+    document.getElementById('pagesContainer').innerHTML = '';
+    pageCount = 0; entryCounter = 0;
+    sharedName = DEFAULT_NAME;
+    addPage();
+  });
+}
+
+/* 入力変更を監視して自動保存 */
+document.getElementById('pagesContainer').addEventListener('input', scheduleSave);
+document.getElementById('pagesContainer').addEventListener('change', scheduleSave);
+
 /* ===== 初期化 ===== */
-addPage();
+restoreState();
 </script>
 </body>
 </html>
