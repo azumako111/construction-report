@@ -433,9 +433,7 @@ function addPage() {
 
   page.innerHTML =
     '<div class="page-header">' +
-      '<div class="page-header-left">' +
-        '<button class="btn-delete-page" onclick="confirmDelete(\'' + pid + '\')">✕ 削除</button>' +
-      '</div>' +
+      '<div class="page-header-left"></div>' +
       '<div class="page-header-center">' +
         '<input class="report-name-input" type="text"' +
           ' value="' + esc(sharedName) + '"' +
@@ -443,7 +441,9 @@ function addPage() {
           ' oninput="syncName(this.value)"' +
           ' onblur="if(!this.value.trim()){this.value=DEFAULT_NAME;syncName(DEFAULT_NAME);}">' +
       '</div>' +
-      '<div class="page-header-right"></div>' +
+      '<div class="page-header-right">' +
+        '<button class="btn-delete-page" onclick="confirmDelete(\'' + pid + '\')">✕ 削除</button>' +
+      '</div>' +
     '</div>' +
     '<div class="entries-list">' +
       entryHTML() + entryHTML() + entryHTML() +
