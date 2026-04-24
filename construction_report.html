@@ -60,7 +60,7 @@
   }
   .toolbar-title {
     font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 600;
-    color: var(--accent); margin-right: auto; letter-spacing: .05em;
+    color: #fff; margin-right: auto; letter-spacing: .05em;
   }
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
@@ -70,6 +70,8 @@
   }
   .btn-accent  { background: var(--accent); color: var(--primary); }
   .btn-accent:hover  { background: #d4b05a; }
+  .btn-print { background: #dc2626; color: #fff; }
+  .btn-print:hover { background: #b91c1c; }
   .btn-outline { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.4); }
   .btn-outline:hover { background: rgba(255,255,255,.12); }
 
@@ -188,6 +190,15 @@
   }
   .btn-move-entry:hover { background: rgba(255,255,255,.3); }
   .btn-move-entry:disabled { opacity: .3; cursor: not-allowed; }
+
+  /* ===== DRAG HANDLE ===== */
+  .drag-handle {
+    cursor: grab; color: rgba(255,255,255,.6); font-size: 14px;
+    padding: 0 2px; user-select: none; flex-shrink: 0;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .entry.dragging { opacity: .4; }
+  .entry.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
   .comment-body {
     flex: 1; display: flex; flex-direction: column;
     padding: 7px 8px 6px; gap: 5px; overflow-y: auto;
@@ -293,7 +304,7 @@
 <div class="toolbar">
   <div class="toolbar-title">📋 施工写真報告書 エディタ</div>
   <button class="btn btn-outline" onclick="confirmReset()">🗑 リセット</button>
-  <button class="btn btn-accent"  onclick="doPrint()">🖨 印刷</button>
+  <button class="btn btn-print"  onclick="doPrint()">🖨 印刷</button>
 </div>
 
 <!-- ===== ページ群 ===== -->
@@ -462,6 +473,7 @@ function addPage() {
 
   document.getElementById('pagesContainer').appendChild(page);
   setupDrop(page);
+  setupEntryDrag(page);
   renumber();
 }
 
@@ -487,8 +499,9 @@ function entryHTML() {
       '</label>' +
       '<div class="comment-panel">' +
         '<div class="comment-header">' +
+          '<span class="drag-handle" title="ドラッグして並べ替え">⠿</span>' +
           '<span class="no-badge">NO. ' + no + '</span>' +
-          '<span class="comment-header-label">撮影情報・コメント</span>' +
+          '<span class="comment-header-label">撮影情報</span>' +
           '<button class="btn-move-entry" onclick="moveEntry(this, -1)" title="上に移動">▲</button>' +
           '<button class="btn-move-entry" onclick="moveEntry(this, 1)" title="下に移動">▼</button>' +
         '</div>' +
@@ -593,14 +606,71 @@ function renumber() {
     var f = p.querySelector('[data-footer-page]');
     if (f) f.textContent = '- ' + (i + 1) + ' -';
   });
+  renumberEntries();
   initializeEntryButtons();
+}
+
+/* ===== エントリ ドラッグ&ドロップ ===== */
+var _dragEntry = null;
+
+function setupEntryDrag(page) {
+  page.querySelectorAll('.entry').forEach(function(entry) {
+    var handle = entry.querySelector('.drag-handle');
+    if (!handle) return;
+
+    handle.addEventListener('mousedown', function() {
+      entry.setAttribute('draggable', 'true');
+    });
+    handle.addEventListener('mouseup', function() {
+      entry.setAttribute('draggable', 'false');
+    });
+
+    entry.addEventListener('dragstart', function(e) {
+      _dragEntry = entry;
+      entry.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    entry.addEventListener('dragend', function() {
+      entry.classList.remove('dragging');
+      document.querySelectorAll('.entry.drag-over').forEach(function(el) {
+        el.classList.remove('drag-over');
+      });
+      entry.setAttribute('draggable', 'false');
+      _dragEntry = null;
+      renumberEntries();
+      initializeEntryButtons();
+    });
+    entry.addEventListener('dragover', function(e) {
+      if (!_dragEntry || _dragEntry === entry) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      entry.classList.add('drag-over');
+    });
+    entry.addEventListener('dragleave', function() {
+      entry.classList.remove('drag-over');
+    });
+    entry.addEventListener('drop', function(e) {
+      e.preventDefault();
+      entry.classList.remove('drag-over');
+      if (!_dragEntry || _dragEntry === entry) return;
+      var list = entry.closest('.entries-list');
+      var entries = Array.from(list.children);
+      var fromIdx = entries.indexOf(_dragEntry);
+      var toIdx   = entries.indexOf(entry);
+      if (fromIdx < toIdx) {
+        list.insertBefore(_dragEntry, entry.nextSibling);
+      } else {
+        list.insertBefore(_dragEntry, entry);
+      }
+    });
+  });
 }
 
 /* ===== エントリ移動 ===== */
 function moveEntry(btn, direction) {
   var entry = btn.closest('.entry');
   var list = entry.closest('.entries-list');
-  var entries = Array.from(list.querySelectorAll('.entry'));
+  var entries = Array.from(list.children);
   var idx = entries.indexOf(entry);
 
   if (direction === -1 && idx > 0) {
@@ -609,7 +679,19 @@ function moveEntry(btn, direction) {
     list.insertBefore(entries[idx + 1], entry);
   }
 
+  renumberEntries();
   initializeEntryButtons();
+}
+
+function renumberEntries() {
+  var no = 0;
+  document.querySelectorAll('.report-page').forEach(function(page) {
+    page.querySelectorAll('.entry').forEach(function(entry) {
+      no++;
+      var badge = entry.querySelector('.no-badge');
+      if (badge) badge.textContent = 'NO. ' + no;
+    });
+  });
 }
 
 function initializeEntryButtons() {
