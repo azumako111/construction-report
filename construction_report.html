@@ -610,9 +610,36 @@ function renumber() {
   initializeEntryButtons();
 }
 
-/* ===== エントリ ドラッグ&ドロップ ===== */
+/* ===== ドラッグ中の自動スクロール ===== */
 var _dragEntry = null;
+var _scrollRaf = null;
+var _dragClientY = 0;
+var SCROLL_ZONE = 80;   /* 画面端からこのpx以内でスクロール開始 */
+var SCROLL_SPEED = 12;  /* 1フレームあたりのスクロール量(px) */
 
+document.addEventListener('dragover', function(e) {
+  _dragClientY = e.clientY;
+  if (!_dragEntry) return;
+  if (!_scrollRaf) _scrollRaf = requestAnimationFrame(_autoScroll);
+});
+
+function _autoScroll() {
+  _scrollRaf = null;
+  if (!_dragEntry) return;
+  var vh = window.innerHeight;
+  if (_dragClientY < SCROLL_ZONE) {
+    window.scrollBy(0, -SCROLL_SPEED * (1 - _dragClientY / SCROLL_ZONE));
+  } else if (_dragClientY > vh - SCROLL_ZONE) {
+    window.scrollBy(0,  SCROLL_SPEED * (1 - (vh - _dragClientY) / SCROLL_ZONE));
+  }
+  _scrollRaf = requestAnimationFrame(_autoScroll);
+}
+
+document.addEventListener('dragend', function() {
+  if (_scrollRaf) { cancelAnimationFrame(_scrollRaf); _scrollRaf = null; }
+});
+
+/* ===== エントリ ドラッグ&ドロップ ===== */
 function setupEntryDrag(page) {
   page.querySelectorAll('.entry').forEach(function(entry) {
     var handle = entry.querySelector('.drag-handle');
