@@ -262,14 +262,14 @@
       page-break-after: always !important; break-after: page !important;
       overflow: hidden !important; display: flex !important; flex-direction: column !important;
     }
-    .page-header { margin-bottom: 3mm !important; padding-bottom: 2mm !important; }
+    .page-header { margin-bottom: 0 !important; padding-bottom: 2mm !important; }
     .report-name-input {
       font-size: 20px !important; letter-spacing: .12em !important;
       white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
     }
-    .entries-list { flex: 1 !important; gap: 2mm !important; overflow: hidden !important; }
-    .entry { flex: 1 !important; min-height: 0 !important; overflow: hidden !important; break-inside: avoid !important; }
-    .img-zone { overflow: hidden !important; min-height: 0 !important; }
+    .entries-list { flex: none !important; width: 100% !important; margin: auto 0 !important; gap: 2mm !important; overflow: hidden !important; }
+    .entry { height: 78mm !important; min-height: 0 !important; overflow: hidden !important; break-inside: avoid !important; flex: none !important; }
+    .img-zone { overflow: hidden !important; min-height: 0 !important; height: 100% !important; }
     .comment-panel { overflow: visible !important; }
     .comment-body { overflow: visible !important; gap: 2px !important; padding: 3px 5px 4px !important; }
     .field-input { font-size: 10px !important; resize: none !important; overflow: visible !important; }
