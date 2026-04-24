@@ -672,7 +672,6 @@ function setupEntryDrag(page) {
     });
     entry.addEventListener('dragover', function(e) {
       if (!_dragEntry || _dragEntry === entry) return;
-      if (_dragEntry.closest('.entries-list') !== entry.closest('.entries-list')) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       entry.classList.add('drag-over');
@@ -684,31 +683,34 @@ function setupEntryDrag(page) {
       e.preventDefault();
       entry.classList.remove('drag-over');
       if (!_dragEntry || _dragEntry === entry) return;
-      if (_dragEntry.closest('.entries-list') !== entry.closest('.entries-list')) return;
-      var list = entry.closest('.entries-list');
-      var entries = Array.from(list.children);
-      var fromIdx = entries.indexOf(_dragEntry);
-      var toIdx   = entries.indexOf(entry);
-      if (fromIdx < toIdx) {
-        list.insertBefore(_dragEntry, entry.nextSibling);
-      } else {
-        list.insertBefore(_dragEntry, entry);
-      }
+      swapEntries(_dragEntry, entry);
     });
   });
 }
 
 /* ===== エントリ移動 ===== */
+function swapEntries(a, b) {
+  var aParent = a.parentNode, aNext = a.nextSibling;
+  var bParent = b.parentNode, bNext = b.nextSibling;
+  if (aNext === b) {
+    aParent.insertBefore(b, a);
+  } else if (bNext === a) {
+    bParent.insertBefore(a, b);
+  } else {
+    bParent.insertBefore(a, bNext);
+    aParent.insertBefore(b, aNext);
+  }
+}
+
 function moveEntry(btn, direction) {
   var entry = btn.closest('.entry');
-  var list = entry.closest('.entries-list');
-  var entries = Array.from(list.children);
-  var idx = entries.indexOf(entry);
+  var all = Array.from(document.querySelectorAll('.entry'));
+  var idx = all.indexOf(entry);
 
   if (direction === -1 && idx > 0) {
-    list.insertBefore(entry, entries[idx - 1]);
-  } else if (direction === 1 && idx < entries.length - 1) {
-    list.insertBefore(entries[idx + 1], entry);
+    swapEntries(all[idx - 1], all[idx]);
+  } else if (direction === 1 && idx < all.length - 1) {
+    swapEntries(all[idx], all[idx + 1]);
   }
 
   renumberEntries();
@@ -728,13 +730,11 @@ function renumberEntries() {
 }
 
 function initializeEntryButtons() {
-  document.querySelectorAll('.entries-list').forEach(function(list) {
-    var entries = list.querySelectorAll('.entry');
-    entries.forEach(function(entry, idx) {
-      var btns = entry.querySelectorAll('.btn-move-entry');
-      if (btns[0]) btns[0].disabled = (idx === 0);
-      if (btns[1]) btns[1].disabled = (idx === entries.length - 1);
-    });
+  var all = Array.from(document.querySelectorAll('.entry'));
+  all.forEach(function(entry, idx) {
+    var btns = entry.querySelectorAll('.btn-move-entry');
+    if (btns[0]) btns[0].disabled = (idx === 0);
+    if (btns[1]) btns[1].disabled = (idx === all.length - 1);
   });
 }
 
