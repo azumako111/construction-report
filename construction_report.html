@@ -181,6 +181,13 @@
     padding: 2px 4px; font-family: 'Noto Serif JP', serif; white-space: nowrap;
   }
   .comment-header-label { font-size: 11px; font-weight: 500; letter-spacing: .05em; flex: 1; }
+  .btn-move-entry {
+    background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.25);
+    border-radius: 3px; padding: 2px 6px; font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .btn-move-entry:hover { background: rgba(255,255,255,.3); }
+  .btn-move-entry:disabled { opacity: .3; cursor: not-allowed; }
   .comment-body {
     flex: 1; display: flex; flex-direction: column;
     padding: 7px 8px 6px; gap: 5px; overflow-y: auto;
@@ -482,6 +489,8 @@ function entryHTML() {
         '<div class="comment-header">' +
           '<span class="no-badge">NO. ' + no + '</span>' +
           '<span class="comment-header-label">撮影情報・コメント</span>' +
+          '<button class="btn-move-entry" onclick="moveEntry(this, -1)" title="上に移動">▲</button>' +
+          '<button class="btn-move-entry" onclick="moveEntry(this, 1)" title="下に移動">▼</button>' +
         '</div>' +
         '<div class="comment-body">' +
           '<div class="field-row">' +
@@ -583,6 +592,34 @@ function renumber() {
   document.querySelectorAll('.report-page').forEach(function(p, i) {
     var f = p.querySelector('[data-footer-page]');
     if (f) f.textContent = '- ' + (i + 1) + ' -';
+  });
+  initializeEntryButtons();
+}
+
+/* ===== エントリ移動 ===== */
+function moveEntry(btn, direction) {
+  var entry = btn.closest('.entry');
+  var list = entry.closest('.entries-list');
+  var entries = Array.from(list.querySelectorAll('.entry'));
+  var idx = entries.indexOf(entry);
+
+  if (direction === -1 && idx > 0) {
+    list.insertBefore(entry, entries[idx - 1]);
+  } else if (direction === 1 && idx < entries.length - 1) {
+    list.insertBefore(entries[idx + 1], entry);
+  }
+
+  initializeEntryButtons();
+}
+
+function initializeEntryButtons() {
+  document.querySelectorAll('.entries-list').forEach(function(list) {
+    var entries = list.querySelectorAll('.entry');
+    entries.forEach(function(entry, idx) {
+      var btns = entry.querySelectorAll('.btn-move-entry');
+      if (btns[0]) btns[0].disabled = (idx === 0);
+      if (btns[1]) btns[1].disabled = (idx === entries.length - 1);
+    });
   });
 }
 
